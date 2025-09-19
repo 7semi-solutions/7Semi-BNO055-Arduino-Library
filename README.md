@@ -2,8 +2,8 @@
 
 A lightweight and minimal Arduino library for the Bosch BNO055 9-DOF IMU sensor.
 
-Supports initialization, raw data reading (Accel / Gyro / Mag / Linear / Gravity), Euler angles, quaternions, per-sensor configuration, offsets, and calibration helpers.  
-Designed to be small in flash usage — suitable for AVR, ESP32/ESP8266, RP2040, and STM32.
+Supports initialization, raw data reading (Accel / Gyro / Mag / Linear / Gravity), Euler angles, quaternions, calibration helpers, and axis remapping.  
+Designed for low flash usage — compatible with AVR, ESP32, ESP8266, RP2040, STM32, and other Arduino platforms.
 
 ![Platform](https://img.shields.io/badge/platform-arduino-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
@@ -13,54 +13,59 @@ Designed to be small in flash usage — suitable for AVR, ESP32/ESP8266, RP2040,
 
 ## ✨ Features
 
-- Detects and initializes the BNO055 automatically at I2C address `0x28` or `0x29`
-- Supports custom I2C pins on supported platforms (ESP, STM32, RP2040, etc.)
+- I2C communication with auto-detection at address `0x28` or `0x29`
+- Works on standard and custom I2C pins (for ESP32, STM32, etc.)
+- Orientation data:
+  - Euler angles (heading, roll, pitch)
+  - Quaternion (w, x, y, z)
 - Raw data reading:
   - Accelerometer
   - Gyroscope
   - Magnetometer
-  - Linear Acceleration
-  - Gravity Vector
-- Orientation data:
-  - Euler angles (heading, roll, pitch)
-  - Quaternions (w, x, y, z)
-- Configuration options:
-  - Sensor range, power mode, bandwidth settings
+  - Linear acceleration
+  - Gravity vector
+- Sensor configuration:
+  - Operation modes
+  - Power modes
+  - Bandwidth & range (per sensor)
   - Axis remapping
-- Calibration helpers:
-  - Real-time calibration status
-  - Saving and restoring calibration offsets
+- Calibration helpers and sensor offset saving/restoring
 
 ---
 
 ## ⚡ Getting Started
 
-### 🧰 Hardware Requirements
+### 1. Installation via Arduino Library Manager
 
-- 7Semi BNO055 Sensor Module  
-- Arduino board (UNO, Nano, ESP32, RP2040, STM32, etc.)  
-- I2C connection (or UART if supported in the library)
+1. Open the **Arduino IDE**
+2. Go to:
+   - `Sketch > Include Library > Manage Libraries…` (IDE 1.x), or  
+   - Use the 📚 **Library Manager** in the sidebar (IDE 2.x)
+3. In the search bar, type:
+   -7Semi BNO055
 
----
+4. Click the **Install** button
 
-### 🔌 Wiring (I2C Example)
+Once installed, include the library in your sketch:
 
-| BNO055 Pin | Arduino Pin     |
-|------------|------------------|
-| VIN        | 3.3V or 5V       |
-| GND        | GND              |
-| SDA        | SDA (A4 on Uno)  |
-| SCL        | SCL (A5 on Uno)  |
-| ADR        | GND (I2C 0x28) or VCC (I2C 0x29) |
+#include <7semi_bno055.h>
+### 2.Wiring (I2C)
+| BNO055 Pin | Arduino Pin                      |
+| ---------- | -------------------------------- |
+| VIN        | 3.3V or 5V                       |
+| GND        | GND                              |
+| SDA        | A4 (Uno) or custom SDA           |
+| SCL        | A5 (Uno) or custom SCL           |
 
-> **Note:** For ESP32, STM32, or RP2040, pass custom `SDA` and `SCL` pins using `begin(sda, scl)`.
+### 3.Applications
 
----
+Robotics and drones
 
-### 🚀 Installation
+Motion tracking and stabilization
 
-#### ✅ Recommended: Arduino Library Manager
+AR/VR and head-tracking
 
-1. Open Arduino IDE (1.8.x or 2.x)  
-2. Go to **Sketch > Include Library > Manage Libraries…**  
-3. Search for:
+Inertial navigation
+
+Wearables and IoT motion sensing
+
