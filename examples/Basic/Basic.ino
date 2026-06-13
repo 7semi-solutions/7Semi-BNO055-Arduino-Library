@@ -1,160 +1,200 @@
 /***************************************************************
- * @file    Basic.ino
- * @brief   Comprehensive example for the 7Semi BNO055 IMU sensor
- *          demonstrating orientation, raw data, calibration, and
- *          quaternion features via I2C.
- *
- * Features demonstrated:
- * - Initialization and NDOF mode selection
- * - Reading Euler angles (heading, roll, pitch)
- * - Reading raw accelerometer, gyroscope, magnetometer data
- * - Reading linear acceleration and gravity vector
- * - Reading quaternion data
- * - Reading temperature and calibration status
- *
- * Sensor Configuration:
- * - Operation Mode : NDOF (Fusion mode)
- * - I2C Address     : Auto-detect (0x28 or 0x29)
- * - External Crystal: Enabled
- *
- * Connections:
- * - VIN  -> 3.3V / 5V
- * - GND  -> GND
- * - SDA  -> A4 (Uno) or custom SDA pin
- * - SCL  -> A5 (Uno) or custom SCL pin
- * - ADR  -> GND (for 0x28) or VCC (for 0x29)
- *
- * Library     : 7Semi_BNO055
- * Author      : 7Semi
- * Version     : 1.0
- * Date        : 19 September 2025
- * License     : MIT
- ***************************************************************/
-
-#include <Wire.h>
+  * @file    Basic.ino
+  * @brief   Basic BNO055 example demonstrating orientation,
+  * 
+        sensor data, quaternion and calibration status.
+    
+  *
+  * Features:
+  * * Initialize BNO055
+  * * Enable NDOF fusion mode
+  * * Read Euler angles
+  * * Read accelerometer data
+  * * Read gyroscope data
+  * * Read magnetometer data
+  * * Read linear acceleration
+  * * Read gravity vector
+  * * Read quaternion data
+  * * Read temperature
+  * * Display calibration status
+  *
+  * Connections:
+  * * VIN -> 3.3V / 5V
+  * * GND -> GND
+  * * SDA -> SDA
+  * * SCL -> SCL
+  *
+  * Library     : 7Semi_BNO055
+  * Author      : 7Semi
+  * Version     : 1.0
+  ***************************************************************/
 #include <7Semi_BNO055.h>
 
-BNO055_7Semi imu;  
+BNO055_7Semi imu;
 
-void printCalib() {
-  uint8_t sys, gyr, acc, mag;
-  imu.calibBreakdown(sys, gyr, acc, mag);
-  Serial.print(F("Calib SYS:"));
-  Serial.print(sys);
+/**
+  * Print current calibration status.
+  *
+  * * Displays system calibration level.
+  * * Displays gyro calibration level.
+  * * Displays accelerometer calibration level.
+  * * Displays magnetometer calibration level.
+  */
+void printCalibration() {
+  BNO055_Calibration calib;
+
+    imu.getCalibration(calib);
+
+  Serial.print(F("Calibration  SYS:"));
+  Serial.print(calib.system);
+
   Serial.print(F(" G:"));
-  Serial.print(gyr);
+  Serial.print(calib.gyro);
+
   Serial.print(F(" A:"));
-  Serial.print(acc);
+  Serial.print(calib.accel);
+
   Serial.print(F(" M:"));
-  Serial.println(mag);
+  Serial.println(calib.mag);
 }
 
 void setup() {
   Serial.begin(115200);
-  delay(500);
-  Serial.println(F("\nBNO055 demo"));
 
-  // Initialize (Wire, address, use external crystal)
+
+  Serial.println(F("\n7Semi BNO055 Basic Example"));
+
+  // Initialize sensor
   if (!imu.begin()) {
-    Serial.println(F("ERROR: BNO055 not found"));
-    while (1) { delay(1000); }
+    Serial.println(F("BNO055 not detected"));
+
+    while (1)
+      ;
   }
 
-  imu.setMode(Mode::NDOF);
+  // Enable fusion mode
+  imu.setOpMode(BNO055_OP_Mode::NDOF);
 
-  // Optional: wait for calibration
-  Serial.print(F("Calibrating"));
-  if (!imu.waitCalibrated(10000, 200)) {
-    Serial.println(F(" - timeout"));
-  } else {
-    Serial.println(F(" - done"));
-  }
-  printCalib();
+  Serial.println(F("Sensor Ready"));
 
-  Serial.println(F("Ready!\n"));
+  printCalibration();
+
+  Serial.println();
 }
 
 void loop() {
-  // // Orientation (degrees or radians depending on UNIT_SEL; defaults to degrees)
-  float heading, roll, pitch;
+  float heading;
+  float roll;
+  float pitch;
+
+
   if (imu.readEuler(heading, roll, pitch)) {
-    Serial.print(F("Euler H/R/P: "));
+    Serial.print(F("Euler H/R/P : "));
     Serial.print(heading, 1);
-    Serial.print('\t');
+    Serial.print(F(", "));
     Serial.print(roll, 1);
-    Serial.print('\t');
+    Serial.print(F(", "));
     Serial.println(pitch, 1);
   }
 
-  // Raw sensor data
-  int16_t ax, ay, az, gx, gy, gz, mx, my, mz;
+  int16_t ax;
+  int16_t ay;
+  int16_t az;
+
   if (imu.readAccel(ax, ay, az)) {
-    Serial.print(F("Accel raw: "));
+    Serial.print(F("Accel : "));
     Serial.print(ax);
-    Serial.print(", ");
+    Serial.print(F(", "));
     Serial.print(ay);
-    Serial.print(", ");
+    Serial.print(F(", "));
     Serial.println(az);
   }
+
+  int16_t gx;
+  int16_t gy;
+  int16_t gz;
+
   if (imu.readGyro(gx, gy, gz)) {
-    Serial.print(F("Gyro raw : "));
+    Serial.print(F("Gyro  : "));
     Serial.print(gx);
-    Serial.print(", ");
+    Serial.print(F(", "));
     Serial.print(gy);
-    Serial.print(", ");
+    Serial.print(F(", "));
     Serial.println(gz);
   }
+
+  int16_t mx;
+  int16_t my;
+  int16_t mz;
+
   if (imu.readMag(mx, my, mz)) {
-    Serial.print(F("Mag  raw : "));
+    Serial.print(F("Mag   : "));
     Serial.print(mx);
-    Serial.print(", ");
+    Serial.print(F(", "));
     Serial.print(my);
-    Serial.print(", ");
+    Serial.print(F(", "));
     Serial.println(mz);
   }
 
-  // Optional: linear acceleration / gravity
-  int16_t lx, ly, lz, gxv, gyv, gzv;
+  int16_t lx;
+  int16_t ly;
+  int16_t lz;
+
   if (imu.readLinear(lx, ly, lz)) {
-    Serial.print(F("LinAcc raw: "));
+    Serial.print(F("Linear: "));
     Serial.print(lx);
-    Serial.print(", ");
+    Serial.print(F(", "));
     Serial.print(ly);
-    Serial.print(", ");
+    Serial.print(F(", "));
     Serial.println(lz);
   }
-  if (imu.readGravity(gxv, gyv, gzv)) {
-    Serial.print(F("Grav  raw: "));
-    Serial.print(gxv);
-    Serial.print(", ");
-    Serial.print(gyv);
-    Serial.print(", ");
-    Serial.println(gzv);
+
+  int16_t gvx;
+  int16_t gvy;
+  int16_t gvz;
+
+  if (imu.readGravity(gvx, gvy, gvz)) {
+    Serial.print(F("Grav  : "));
+    Serial.print(gvx);
+    Serial.print(F(", "));
+    Serial.print(gvy);
+    Serial.print(F(", "));
+    Serial.println(gvz);
   }
 
-  // Optional: quaternion
-  float qw, qx, qy, qz;
-  if (imu.readQuat(qw, qx, qy, qz)) {
-    Serial.print(F("Quat WXYZ: "));
+  float qw;
+  float qx;
+  float qy;
+  float qz;
+
+  if (imu.readQuaternion(qw, qx, qy, qz)) {
+    Serial.print(F("Quat  : "));
     Serial.print(qw, 4);
-    Serial.print(", ");
+    Serial.print(F(", "));
     Serial.print(qx, 4);
-    Serial.print(", ");
+    Serial.print(F(", "));
     Serial.print(qy, 4);
-    Serial.print(", ");
+    Serial.print(F(", "));
     Serial.println(qz, 4);
   }
-  int temp = imu.temperatureC();
-  Serial.print("Temperature: ");
-  Serial.print(temp);
-  Serial.println(" °C");
-  // Show calibration every ~2s
-  static uint32_t tCal = 0;
-  if (millis() - tCal > 2000) {
-    tCal = millis();
-    printCalib();
+
+  int8_t temperature;
+
+  if (imu.readTemperature(temperature)) {
+    Serial.print(F("Temp  : "));
+    Serial.print(temperature);
+    Serial.println(F(" C"));
+  }
+
+  static uint32_t lastCalibration = 0;
+
+  if (millis() - lastCalibration >= 2000) {
+    lastCalibration = millis();
+
+    printCalibration();
   }
 
   Serial.println();
+
   delay(500);
 }

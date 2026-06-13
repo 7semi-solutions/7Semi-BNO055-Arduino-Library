@@ -1,79 +1,111 @@
-/***************************************************************
- * @file    Linear_Acceleration.ino
- * @brief   Example demonstrating how to read linear acceleration
- *          data from the 7Semi BNO055 sensor over I2C.
- *
- * Features Demonstrated:
- * - Sensor initialization using I2C
- * - Optional accelerometer configuration (range, bandwidth, power)
- * - Reading linear acceleration in raw (mg) and converted (m/s²)
- *
- * Notes:
- * - Linear acceleration is acceleration with gravity removed.
- * - 1 LSB = 1 mg = 0.00981 m/s² (default unit settings)
- *
- * Sensor Configuration:
- * - Accel Range    : ±4g
- * - Bandwidth      : 125 Hz
- * - Power Mode     : Normal
- * - Communication  : I2C (auto-detect 0x28 / 0x29)
- *
- * Connections:
- * - VIN  -> 3.3V / 5V
- * - GND  -> GND
- * - SDA  -> A4 (Uno) or custom SDA
- * - SCL  -> A5 (Uno) or custom SCL
- *
- * Library   : 7Semi_BNO055
- * Author    : 7Semi
- * Version   : 1.0
- * Date      : 20 September 2025
- * License   : MIT
- ***************************************************************/
-
-#include <Wire.h>
+/***************************************************************           
+  * @file    LinearAcceleration.ino
+  * @brief   Read linear acceleration data from the BNO055 sensor.
+  *
+  * Features:
+  * * Initialize BNO055
+  * * Configure accelerometer settings
+  * * Read raw linear acceleration values
+  * * Read converted linear acceleration values
+  * * Display active accelerometer configuration
+  *
+  * Linear Acceleration:
+  * * Gravity component removed
+  * * Useful for motion detection
+  * * Useful for velocity estimation
+  *
+  * Accelerometer Configuration:
+  * * Range      : ±4g
+  * * Bandwidth  : 125 Hz
+  * * Power Mode : Normal
+  * * Unit       : m/s²
+  *
+    * Connections:
+    * * VIN -> 3.3V / 5V
+    * * GND -> GND
+    * * SDA -> SDA
+    * * SCL -> SCL
+    *
+    * Library     : 7Semi_BNO055
+    * Author      : 7Semi
+    * Version     : 1.0
+  ***************************************************************/
 #include <7Semi_BNO055.h>
 
 BNO055_7Semi imu;
 
-// 1 LSB = 1 mg = 0.00981 m/s² (when UNIT_SEL accel bit = 0)
-static inline float toMS2(int16_t v) { return v * 0.00981f; }
+/**
+  * Print current accelerometer configuration.
+  *
+  * * Reads configuration from the sensor.
+  * * Displays range, bandwidth and power mode.
+  */
+void printAccelConfig() {
+  AccelConfig config;
+
+  if (!imu.getAccelConfig(config)) {
+    Serial.println(F("Failed to read accelerometer configuration"));
+    return;
+  }
+
+  Serial.println(F("\nAccelerometer Configuration"));
+
+  Serial.print(F("Range      : "));
+  Serial.println((uint8_t)config.range);
+
+  Serial.print(F("Bandwidth  : "));
+  Serial.println((uint8_t)config.bandwidth);
+
+  Serial.print(F("Power Mode : "));
+  Serial.println((uint8_t)config.powerMode);
+}
 
 void setup() {
   Serial.begin(115200);
-  delay(300);
-  Serial.println(F("\n7Semi_BNO055 Linear Acceleration"));
 
-  // begin(Wire, SDA, SCL, useExtCrystal)
-  if (!imu.begin(Wire, SDA, SCL, /*useExtCrystal=*/true)) {
-    Serial.println(F("BNO055 not found"));
-    while (1) delay(1000);
+
+  Serial.println(F("\n7Semi BNO055 Linear Acceleration Example"));
+
+  // Initialize sensor
+  if (!imu.begin()) {
+    Serial.println(F("BNO055 not detected"));
+
+    while (1)
+      ;
   }
 
-  // (Optional) configure accel if you want specific range/BW/power
-  imu.configAccel(g4, BW_125, Accel_Normal);
+  // Configure accelerometer
+  AccelConfig config;
 
-  Serial.println(F("Reading linear acceleration..."));
+  config.range = AccelRange::G4;
+  config.bandwidth = AccelBandwidth::HZ125;
+  config.powerMode = AccelPowerMode::Normal;
+  config.unit = BNO055_Accel_Unit::MetersPerSecondSquared;
+
+  if (!imu.setAccelConfig(config)) {
+    Serial.println(F("Failed to configure accelerometer"));
+  }
+
+  // Enable fusion mode
+  imu.setOpMode(BNO055_OP_Mode::NDOF);
+
+  printAccelConfig();
+
+  Serial.println(F("\nReading linear acceleration data..."));
 }
 
 void loop() {
-  int16_t lx_r, ly_r, lz_r;
-  if (imu.readLinear(lx_r, ly_r, lz_r)) {
-    float lx = toMS2(lx_r);
-    float ly = toMS2(ly_r);
-    float lz = toMS2(lz_r);
+  BNO055_Sensor_Data linear;
 
-    Serial.print(F("linear accel mg: "));
-    Serial.print(lx_r); Serial.print(',');
-    Serial.print(ly_r); Serial.print(',');
-    Serial.print(lz_r);
-
-    Serial.print(F("   m/s^2: "));
-    Serial.print(lx, 3); Serial.print(',');
-    Serial.print(ly, 3); Serial.print(',');
-    Serial.println(lz, 3);
+  if (imu.readLinear(linear)) {
+    Serial.print(F("m/s²: "));
+    Serial.print(linear.x, 3);
+    Serial.print(F(", "));
+    Serial.print(linear.y, 3);
+    Serial.print(F(", "));
+    Serial.println(linear.z, 3);
   } else {
-    Serial.println(F("readLinear failed"));
+    Serial.println(F("Failed to read linear acceleration"));
   }
 
   delay(200);

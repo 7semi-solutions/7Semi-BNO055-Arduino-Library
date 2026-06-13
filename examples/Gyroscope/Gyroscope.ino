@@ -1,111 +1,104 @@
 /***************************************************************
- * @file    Gyroscope.ino
- * @brief   Example for reading gyroscope data from the 
- *          7Semi BNO055 IMU sensor using I2C.
- *
- * Features Demonstrated:
- * - Initialization and sensor configuration
- * - Gyroscope configuration: range, bandwidth, power mode
- * - Reading raw gyro data in DSP units
- * - Converting DSP (1/16°/s) to RPS (rad/s)
- * - Real-time monitoring via Serial
- *
- * Sensor Configuration:
- * - Range       : ±500 dps
- * - Bandwidth   : 47 Hz
- * - Power Mode  : Normal
- * - Communication: I2C (auto-detect 0x28 / 0x29)
- *
- * Connections:
- * - VIN  -> 3.3V / 5V
- * - GND  -> GND
- * - SDA  -> A4 (UNO) or custom SDA
- * - SCL  -> A5 (UNO) or custom SCL
- *
- * Library   : 7Semi_BNO055
- * Author    : 7Semi
- * Version   : 1.0
- * Date      : 20 September 2025
- * License   : MIT
- ***************************************************************/
+
+  * @file    Gyroscope.ino
+  * @brief   Read gyroscope data from the BNO055 sensor.
+  *
+  * Features:
+  * * Initialize BNO055
+  * * Configure gyroscope settings
+  * * Read converted gyroscope values
+  * * Display active gyroscope configuration
+  *
+  * Gyroscope Configuration:
+  * * Range      : ±500 dps
+  * * Bandwidth  : 47 Hz
+  * * Power Mode : Normal
+  * * Unit       : Degrees Per Second
+  *
+  * Connections:
+  * * VIN -> 3.3V / 5V
+  * * GND -> GND
+  * * SDA -> SDA
+  * * SCL -> SCL
+  *
+  * Library     : 7Semi_BNO055
+  * Author      : 7Semi
+  * Version     : 1.0
+  ***************************************************************/
 
 #include <Wire.h>
 #include <7Semi_BNO055.h>
 
 BNO055_7Semi imu;
 
-// 1 dsp = 1/16 rps
-static inline float gyroRPS(int16_t v) {
-  return v / 16.0f;
-}
-
+/**
+  * Print current gyroscope configuration.
+  *
+  * * Reads configuration from the sensor.
+  * * Displays range, bandwidth and power mode.
+  */
 void printGyroConfig() {
-  uint8_t range, bw, pwr;
-  if (imu.getGyroConfig(range, bw, pwr)) {
-    Serial.print(F("Gyro Config  range="));
-    Serial.print(range);
-    Serial.print(F("  bw="));
-    Serial.print(bw);
-    Serial.print(F("  power="));
-    Serial.println(pwr);
-  } else {
-    Serial.println(F("getGyroConfig failed"));
+  GyroConfig config;
+
+  if (!imu.getGyroConfig(config)) {
+    Serial.println(F("Failed to read gyroscope configuration"));
+    return;
   }
+
+  Serial.println(F("\nGyroscope Configuration"));
+
+  Serial.print(F("Range      : "));
+  Serial.println((uint8_t)config.range);
+
+  Serial.print(F("Bandwidth  : "));
+  Serial.println((uint8_t)config.bandwidth);
+
+  Serial.print(F("Power Mode : "));
+  Serial.println((uint8_t)config.powerMode);
 }
 
 void setup() {
   Serial.begin(115200);
-  delay(300);
-  Serial.println(F("\n7Semi_BNO055 Gyroscope-only"));
 
-  // begin(Wire, SDA, SCL, useExtCrystal, i2cClockHz)
-  if (!imu.begin(Wire, SDA, SCL, /*useExtCrystal=*/true)) {
-    Serial.println(F("BNO055 not found"));
-    while (1) delay(1000);
+  Serial.println(F("\n7Semi BNO055 Gyroscope Example"));
+
+  // Initialize sensor
+  if (!imu.begin()) {
+    Serial.println(F("BNO055 not detected"));
+
+    while (1)
+      ;
   }
-  /*
-    Gyroscope Configuration 
-    ranges:
-      dps2000, dps1000, dps500, dps250, dps125
-    
-    bandwidths:
-      BW_523, BW_230, BW_116, BW_47, BW_23, BW_12, BW_64, BW_32
-    
-    power modes:
-      Gyro_Normal, Gyro_FastPowerUp, Gyro_DeepSuspend,
-      Gyro_Suspend, Gyro_AdvancedPowersave
-    */
 
-  if (!imu.configGyro(dps500, BW_47, Gyro_Normal)) {
-    Serial.println(F("configGyro failed"));
+  // Configure gyroscope
+  GyroConfig config;
+
+  config.range = GyroRange::DPS500;
+  config.bandwidth = GyroBandwidth::HZ47;
+  config.powerMode = GyroPowerMode::Normal;
+  config.unit = BNO055_Gyro_Unit::DegreesPerSecond;
+
+  if (!imu.setGyroConfig(config)) {
+    Serial.println(F("Failed to configure gyroscope"));
   }
 
   printGyroConfig();
-  Serial.println(F("Reading gyro..."));
+
+  Serial.println(F("\nReading gyroscope data..."));
 }
 
 void loop() {
-  int16_t gxr, gyr, gzr;
-  if (imu.readGyro(gxr, gyr, gzr)) {
-    float gx = gyroRPS(gxr);
-    float gy = gyroRPS(gyr);
-    float gz = gyroRPS(gzr);
+  BNO055_Sensor_Data gyro;
 
-    Serial.print(F("DSP: "));
-    Serial.print(gxr);
-    Serial.print(',');
-    Serial.print(gyr);
-    Serial.print(',');
-    Serial.print(gzr);
-
-    Serial.print(F("   RSP: "));
-    Serial.print(gx, 2);
-    Serial.print(',');
-    Serial.print(gy, 2);
-    Serial.print(',');
-    Serial.println(gz, 2);
+  if (imu.readGyro(gyro)) {
+    Serial.print(F("DPS : "));
+    Serial.print(gyro.x, 3);
+    Serial.print(F(", "));
+    Serial.print(gyro.y, 3);
+    Serial.print(F(", "));
+    Serial.println(gyro.z, 3);
   } else {
-    Serial.println(F("readGyro failed"));
+    Serial.println(F("Failed to read gyroscope"));
   }
 
   delay(500);

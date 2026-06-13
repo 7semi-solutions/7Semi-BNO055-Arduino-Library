@@ -1,132 +1,109 @@
 /***************************************************************
- * @file    Accelerometer.ino
- * @brief   Example for reading raw and converted accelerometer data 
- *          from the 7Semi BNO055 IMU sensor using I2C.
- *
- * Features demonstrated:
- * - Initialization and configuration of the accelerometer
- * - Setting range, bandwidth, and power mode
- * - Reading raw (mg) and converted (m/s²) values
- * - Register-based configuration validation
- *
- * Sensor configuration used:
- * - Accel Range   : ±4g
- * - Bandwidth     : 125 Hz
- * - Power Mode    : Normal
- * - Communication : I2C (auto-detect 0x28 or 0x29)
- *
- * Connections:
- * - SDA -> A4 (UNO) or custom SDA
- * - SCL -> A5 (UNO) or custom SCL
- * - VIN -> 3.3V / 5V
- * - GND -> GND
- *
- * @author   7Semi
- * @license  MIT
- * @version  1.0
- * @date     19 September 2025
- ***************************************************************/
+
+* @file    Accelerometer.ino
+* @brief   Read accelerometer data from the BNO055 sensor.
+*
+* Features:
+* * Initialize BNO055
+* * Configure accelerometer settings
+* * Read raw accelerometer values
+* * Read converted accelerometer values
+* * Display active accelerometer configuration
+*
+* Accelerometer Configuration:
+* * Range      : ±4g
+* * Bandwidth  : 125 Hz
+* * Power Mode : Normal
+* * Unit       : m/s²
+*
+* Connections:
+* * VIN -> 3.3V / 5V
+* * GND -> GND
+* * SDA -> SDA
+* * SCL -> SCL
+*
+* Library     : 7Semi_BNO055
+* Author      : 7Semi
+* Version     : 1.0
+  ***************************************************************/
 
 #include <Wire.h>
 #include <7Semi_BNO055.h>
 
 BNO055_7Semi imu;
 
-// Convert mg accel  to m/s² 
-static inline float accMS2(int16_t v) {
-  return v * 0.00981f;
-}
-
-// Print back current accel config from registers
+/**
+* Print current accelerometer configuration.
+*
+* * Reads configuration from the sensor.
+* * Displays range, bandwidth and power mode.
+*/
 void printAccelConfig() {
-  uint8_t range, bw, pwr;
-  if (imu.getAccelConfig(range, bw, pwr)) {
-    Serial.print(F("Accel Config  range="));
-    Serial.print(range);
-    Serial.print(F("  bw="));
-    Serial.print(bw);
-    Serial.print(F("  power="));
-    Serial.println(pwr);
-  } else {
-    Serial.println(F("getAccelConfig failed"));
+  AccelConfig config;
+
+  if (!imu.getAccelConfig(config)) {
+    Serial.println(F("Failed to read accelerometer configuration"));
+    return;
   }
+
+  Serial.println(F("\nAccelerometer Configuration"));
+
+  Serial.print(F("Range      : "));
+  Serial.println((uint8_t)config.range);
+
+  Serial.print(F("Bandwidth  : "));
+  Serial.println((uint8_t)config.bandwidth);
+
+  Serial.print(F("Power Mode : "));
+  Serial.println((uint8_t)config.powerMode);
 }
 
 void setup() {
   Serial.begin(115200);
-  delay(300);
-  Serial.println(F("\n7Semi_BNO055 Accel"));
 
-  // Initialize IMU (auto-detects 0x28/0x29 I2C addr)
-  if (!imu.begin(Wire, SDA, SCL, /*useExtCrystal=*/true)) {
-    Serial.println(F("BNO055 not found"));
-    while (1) delay(1000);
+
+  Serial.println(F("\n7Semi BNO055 Accelerometer Example"));
+
+  // Initialize sensor
+  if (!imu.begin()) {
+    Serial.println(F("BNO055 not detected"));
+
+    while (1)
+      ;
   }
 
- /*
- Accelerometer Configuration 
-  ranges:
-    g2
-    g4
-    g8
-    g16
-  
-  bandwidths:
-    BW_7_81
-    BW_15_63
-    BW_31_25
-    BW_62_5
-    BW_125
-    BW_250
-    BW_500
-    BW_1000
-  
-  power modes:
-    Accel_Normal
-    Accel_Suspend
-    Accel_LowPower1
-    Accel_Standby
-    Accel_LowPower2
-    Accel_DeepSuspend
-    */
+  // Configure accelerometer
+  AccelConfig config;
 
-  if (!imu.configAccel(g4, BW_125, Accel_Normal)) {
-    Serial.println(F("configAccel failed"));
+  config.range = AccelRange::G4;
+  config.bandwidth = AccelBandwidth::HZ125;
+  config.powerMode = AccelPowerMode::Normal;
+  config.unit = BNO055_Accel_Unit::MetersPerSecondSquared;
+
+  if (!imu.setAccelConfig(config)) {
+    Serial.println(F("Failed to configure accelerometer"));
   }
 
-  if (!imu.configAccel(g4, BW_125, Accel_Normal)) {
-    Serial.println(F("configAccel failed"));
-  }
-
-  // Print actual register config to confirm
   printAccelConfig();
-  Serial.println(F("Reading accel..."));
+
+  Serial.println(F("\nReading accelerometer data..."));
 }
 
 void loop() {
-  int16_t axr, ayr, azr;
-  if (imu.readAccel(axr, ayr, azr)) {
-    float ax = accMS2(axr);
-    float ay = accMS2(ayr);
-    float az = accMS2(azr);
+  BNO055_Sensor_Data accel;
 
-    // Print both raw LSB and converted m/s²
-    Serial.print(F("mg: "));
-    Serial.print(axr);
-    Serial.print(',');
-    Serial.print(ayr);
-    Serial.print(',');
-    Serial.print(azr);
 
-    Serial.print(F("   m/s^2: "));
-    Serial.print(ax, 3);
-    Serial.print(',');
-    Serial.print(ay, 3);
-    Serial.print(',');
-    Serial.println(az, 3);
+  if (imu.readAccel(accel)) {
+
+    Serial.print(F("m/s²: "));
+    Serial.print(accel.x, 3);
+    Serial.print(F(", "));
+    Serial.print(accel.y, 3);
+    Serial.print(F(", "));
+    Serial.println(accel.z, 3);
   } else {
-    Serial.println(F("readAccel failed"));
+    Serial.println(F("Failed to read accelerometer"));
   }
 
-  delay(500);
+  delay(200);
 }
