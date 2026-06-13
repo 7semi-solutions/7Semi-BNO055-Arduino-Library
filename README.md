@@ -1,71 +1,392 @@
-# 7Semi_BNO055
+# 7Semi BNO055 Arduino Library
 
-A lightweight and minimal Arduino library for the Bosch BNO055 9-DOF IMU sensor.
+Arduino library for the Bosch BNO055 9-axis Absolute Orientation Sensor.
 
-Supports initialization, raw data reading (Accel / Gyro / Mag / Linear / Gravity), Euler angles, quaternions, calibration helpers, and axis remapping.  
-Designed for low flash usage — compatible with AVR, ESP32, ESP8266, RP2040, STM32, and other Arduino platforms.
-
-![Platform](https://img.shields.io/badge/platform-arduino-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Status](https://img.shields.io/badge/status-active-brightgreen.svg)
+The library provides access to accelerometer, gyroscope, magnetometer, Euler angles, quaternions, gravity vector, linear acceleration, calibration data, power management and device configuration.
 
 ---
 
-## ✨ Features
+## Features
 
-- I2C communication with auto-detection at address `0x28` or `0x29`
-- Works on standard and custom I2C pins (for ESP32, STM32, etc.)
-- Orientation data:
-  - Euler angles (heading, roll, pitch)
-  - Quaternion (w, x, y, z)
-- Raw data reading:
-  - Accelerometer
-  - Gyroscope
-  - Magnetometer
-  - Linear acceleration
-  - Gravity vector
-- Sensor configuration:
-  - Operation modes
-  - Power modes
-  - Bandwidth & range (per sensor)
-  - Axis remapping
-- Calibration helpers and sensor offset saving/restoring
+* Accelerometer
+* Gyroscope
+* Magnetometer
+* Euler Angles
+* Quaternion Output
+* Linear Acceleration
+* Gravity Vector
+* Temperature Sensor
+* Calibration Management
+* Device Information
+* Power Mode Control
+* Interrupt Management
+* Sensor Configuration
+* I2C Communication
+* External Crystal Support
 
 ---
 
-## ⚡ Getting Started
+## Supported Platforms
 
-### 1. Installation via Arduino Library Manager
+* AVR
+* ESP8266
+* ESP32
+* Arduino Compatible Boards
 
-1. Open the **Arduino IDE**
-2. Go to:
-   - `Sketch > Include Library > Manage Libraries…` (IDE 1.x), or  
-   - Use the 📚 **Library Manager** in the sidebar (IDE 2.x)
-3. In the search bar, type:
-   -7Semi BNO055
+---
 
-4. Click the **Install** button
+## Dependency
 
-Once installed, include the library in your sketch:
+This library requires:
 
-#include <7semi_bno055.h>
-### 2.Wiring (I2C)
-| BNO055 Pin | Arduino Pin                      |
-| ---------- | -------------------------------- |
-| VIN        | 3.3V or 5V                       |
-| GND        | GND                              |
-| SDA        | A4 (Uno) or custom SDA           |
-| SCL        | A5 (Uno) or custom SCL           |
+* 7Semi_BusCore
 
-### 3.Applications
+Install the dependency before using this library.
 
-Robotics and drones
+---
 
-Motion tracking and stabilization
+## Installation
 
-AR/VR and head-tracking
+### Arduino Library Manager
 
-Inertial navigation
+1. Open Arduino IDE.
+2. Open Library Manager.
+3. Search for **7Semi BNO055**.
+4. Click Install.
 
-Wearables and IoT motion sensing
+### Manual Installation
 
+1. Download this repository.
+2. Install the library using:
+
+   * Sketch
+   * Include Library
+   * Add ZIP Library
+3. Install **7Semi_BusCore**.
+4. Restart Arduino IDE.
+
+---
+
+## Hardware Connections
+
+### I2C Interface
+
+| BNO055 | MCU        |
+| ------ | ---------- |
+| VIN    | 3.3V / 5V  |
+| GND    | GND        |
+| SDA    | SDA        |
+| SCL    | SCL        |
+| ADR    | GND (0x28) |
+| ADR    | VCC (0x29) |
+
+---
+
+## Quick Start
+
+### Initialize Sensor
+
+```cpp
+#include <7Semi_BNO055.h>
+
+BNO055_7Semi imu;
+
+void setup()
+{
+    Serial.begin(115200);
+
+    if (!imu.begin())
+    {
+        Serial.println("BNO055 not detected");
+
+        while (1);
+    }
+}
+```
+
+---
+
+## Set Operation Mode
+
+```cpp
+imu.setMode(
+    BNO055_OP_Mode::NDOF);
+```
+
+Available modes:
+
+```cpp
+CONFIG
+ACCONLY
+MAGONLY
+GYRONLY
+ACCMAG
+ACCGYRO
+MAGGYRO
+AMG
+IMUPLUS
+COMPASS
+M4G
+NDOF_FMC_OFF
+NDOF
+```
+
+---
+
+## Read Euler Angles
+
+```cpp
+float heading;
+float roll;
+float pitch;
+
+imu.readEuler(
+    heading,
+    roll,
+    pitch);
+```
+
+---
+
+## Read Quaternion
+
+```cpp
+float w;
+float x;
+float y;
+float z;
+
+imu.readQuaternion(
+    w,
+    x,
+    y,
+    z);
+```
+
+---
+
+## Read Accelerometer
+
+```cpp
+int16_t x;
+int16_t y;
+int16_t z;
+
+imu.readAccel(
+    x,
+    y,
+    z);
+```
+
+---
+
+## Read Gyroscope
+
+```cpp
+int16_t x;
+int16_t y;
+int16_t z;
+
+imu.readGyro(
+    x,
+    y,
+    z);
+```
+
+---
+
+## Read Magnetometer
+
+```cpp
+int16_t x;
+int16_t y;
+int16_t z;
+
+imu.readMag(
+    x,
+    y,
+    z);
+```
+
+---
+
+## Read Linear Acceleration
+
+```cpp
+int16_t x;
+int16_t y;
+int16_t z;
+
+imu.readLinear(
+    x,
+    y,
+    z);
+```
+
+---
+
+## Read Gravity Vector
+
+```cpp
+int16_t x;
+int16_t y;
+int16_t z;
+
+imu.readGravity(
+    x,
+    y,
+    z);
+```
+
+---
+
+## Read Temperature
+
+```cpp
+int8_t temperature;
+
+imu.readTemperature(
+    temperature);
+```
+
+---
+
+## Calibration
+
+### Read Calibration Status
+
+```cpp
+uint8_t system;
+uint8_t gyro;
+uint8_t accel;
+uint8_t mag;
+
+imu.getCalibration(
+    system,
+    gyro,
+    accel,
+    mag);
+```
+
+### Read Calibration Data
+
+```cpp
+BNO055_CalibrationData data;
+
+imu.readCalibrationData(
+    data);
+```
+
+### Write Calibration Data
+
+```cpp
+BNO055_CalibrationData data;
+
+imu.writeCalibrationData(
+    data);
+```
+
+---
+
+## Device Information
+
+```cpp
+DeviceInfo info;
+
+imu.getDeviceInfo(
+    info);
+```
+
+Available fields:
+
+```cpp
+info.chipID
+info.accelID
+info.magID
+info.gyroID
+info.swRevision
+info.blRevision
+```
+
+---
+
+## Power Modes
+
+### Set Power Mode
+
+```cpp
+imu.setPowerMode(
+    BNO055_Power_Mode::NORMAL);
+```
+
+### Get Power Mode
+
+```cpp
+BNO055_Power_Mode mode;
+
+imu.getPowerMode(
+    mode);
+```
+
+---
+
+## Interrupt Management
+
+### Enable Interrupt
+
+```cpp
+imu.enableInterrupt(
+    BNO055_Interrupt::AccelAnyMotion);
+```
+
+### Disable Interrupt
+
+```cpp
+imu.disableInterrupt(
+    BNO055_Interrupt::AccelAnyMotion);
+```
+
+### Read Interrupt State
+
+```cpp
+bool enabled;
+
+imu.isInterruptEnabled(
+    BNO055_Interrupt::AccelAnyMotion,
+    enabled);
+```
+
+---
+
+## Examples
+
+The library includes the following examples:
+
+* Basic
+* Accelerometer
+* Gyroscope
+* Magnetometer
+* LinearAcceleration
+* Gravity
+* Euler
+* Quaternion
+
+---
+
+## License
+
+MIT License
+
+Copyright (c) 7Semi
+
+---
+
+## Links
+
+Website
+
+<https://7semi.com>
+
+GitHub
+
+<https://github.com/7semi-solutions/7Semi_BNO055_Arduino-Library>
